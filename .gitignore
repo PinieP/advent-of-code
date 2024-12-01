@@ -32,5 +32,7 @@
 *.app
 
 build/
+target/
+Cargo.lock
 compile_commands.json
 .cache/

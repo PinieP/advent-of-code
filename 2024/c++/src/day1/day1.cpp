@@ -5,36 +5,34 @@ using namespace assert;
 
 auto read_file() -> std::string
 {
-    constexpr auto path = "src/day1/input.txt";
     std::ostringstream stream;
-    std::ifstream file(path);
+    std::ifstream file("../inputs/1.txt");
     stream << file.rdbuf();
     return stream.str();
 }
 
-template <typename T>
-concept CharRange = std::ranges::range<T> && std::same_as<char, std::ranges::range_value_t<T>>;
 
-auto parse_num(CharRange auto s) -> int
+auto parse_num(std::ranges::range auto s) -> int
 {
     const std::string str = s | std::ranges::to<std::string>();
     return std::stoi(str);
 };
 
-
 auto parse(std::string_view input) -> std::pair<std::vector<int>, std::vector<int>>
 {
     constexpr auto eat_num = std::views::take_while([](char c) { return !std::isspace(c); });
 
-    auto parsed
-        = input                              //
-        | std::views::take(input.size() - 1) //
-        | std::views::split('\n')            //
-        | std::views::transform([&](auto line) {
-              return std::pair{
-                  parse_num(line | eat_num), parse_num(line | std::views::reverse | eat_num | std::views::reverse)
-              };
-          });
+    auto parsed = input                              //
+                | std::views::take(input.size() - 1) //
+                | std::views::split('\n')            //
+                | std::views::transform(             //
+                      [&](auto line) {
+                          return std::pair{
+                              parse_num(line | eat_num), //
+                              parse_num(line | std::views::reverse | eat_num | std::views::reverse)
+                          };
+                      }
+                );
     return std::pair{
         parsed | std::views::keys | std::ranges::to<std::vector>(),
         parsed | std::views::values | std::ranges::to<std::vector>()
