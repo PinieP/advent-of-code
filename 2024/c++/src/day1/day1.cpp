@@ -3,40 +3,17 @@ import utils;
 
 using namespace assert;
 
-auto read_file() -> std::string
-{
-    std::ostringstream stream;
-    std::ifstream file("../inputs/1.txt");
-    stream << file.rdbuf();
-    return stream.str();
-}
-
-
-auto parse_num(std::ranges::range auto s) -> int
-{
-    const std::string str = s | std::ranges::to<std::string>();
-    return std::stoi(str);
-};
 
 auto parse(std::string_view input) -> std::pair<std::vector<int>, std::vector<int>>
 {
-    constexpr auto eat_num = std::views::take_while([](char c) { return !std::isspace(c); });
-
-    auto parsed = input                              //
-                | std::views::take(input.size() - 1) //
-                | std::views::split('\n')            //
-                | std::views::transform(             //
-                      [&](auto line) {
-                          return std::pair{
-                              parse_num(line | eat_num), //
-                              parse_num(line | std::views::reverse | eat_num | std::views::reverse)
-                          };
-                      }
-                );
-    return std::pair{
-        parsed | std::views::keys | std::ranges::to<std::vector>(),
-        parsed | std::views::values | std::ranges::to<std::vector>()
-    };
+    std::stringstream stream{input};
+    std::vector<int> left, right;
+    int a, b;
+    while (stream >> a >> b) {
+        left.push_back(a);
+        right.push_back(b);
+    }
+    return {left, right};
 }
 
 
@@ -88,7 +65,12 @@ auto main() -> int
     assert_eq(puzzle1(test_input), 11);
     assert_eq(puzzle2(test_input), 31);
 
-    const std::string input = read_file();
+    const std::string input = [] {
+        std::ostringstream stream;
+        std::ifstream file("../inputs/1.txt");
+        stream << file.rdbuf();
+        return std::move(stream).str();
+    }();
     std::println("result of puzzle1 is: {}", puzzle1(input));
     std::println("result of puzzle2 is: {}", puzzle2(input));
 }

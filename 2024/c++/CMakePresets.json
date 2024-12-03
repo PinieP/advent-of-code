@@ -10,7 +10,7 @@
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": true,
                 "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
-                "CMAKE_CXX_FLAGS": "-stdlib=libc++ -Wpedantic -Wall"
+                "CMAKE_CXX_FLAGS": "-stdlib=libc++ -Wpedantic -Wall -fdiagnostics-color=always"
             }
         },
         {
