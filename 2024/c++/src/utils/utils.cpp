@@ -413,6 +413,33 @@ struct Split_whitespace : std::ranges::range_adaptor_closure<Split_whitespace> {
 };
 export inline constexpr Split_whitespace split_whitespace;
 
+template <typename R>
+concept Sv_like = std::ranges::contiguous_range<R> && std::same_as<char, std::ranges::range_value_t<R>>;
+
+struct To_sv : std::ranges::range_adaptor_closure<To_sv> {
+    static constexpr auto operator()(const Sv_like auto& range) -> std::string_view
+    {
+        return std::string_view{std::ranges::data(range), static_cast<std::size_t>(std::ranges::distance(range))};
+    }
+};
+export inline constexpr To_sv to_sv;
+
+template <typename I>
+    requires std::integral<I>
+constexpr auto parse_num(const Sv_like auto& sv) -> std::optional<I>
+{
+    const char* first = std::ranges::data(sv);
+    const char* last = first + std::ranges::distance(sv);
+    I i;
+    auto res = std::from_chars(first, last, i);
+    if (res.ec == std::errc::invalid_argument) {
+        return std::nullopt;
+    }
+    else {
+        return std::optional{i};
+    }
+}
+
 
 static_assert(std::ranges::range<decltype(std::declval<Split_adaptor_closure<char>>()(std::declval<std::string_view>())
               )>);
