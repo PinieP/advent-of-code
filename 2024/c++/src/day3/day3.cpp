@@ -1,7 +1,9 @@
 import std;
 import utils;
 
-using namespace assert;
+using namespace utils::assert;
+namespace str = utils::strings;
+
 using Parse_result = std::optional<std::string_view>;
 
 auto parse_num(int& out)
@@ -42,7 +44,7 @@ auto parse_mul(std::string_view sv) -> std::optional<Parse_mul_value>
 }
 
 
-constexpr auto drop_first = std::views::drop(1) | strings::to_sv;
+constexpr auto drop_first = std::views::drop(1) | str::to_sv;
 auto puzzle1(std::string_view input) -> int
 {
     return input.empty() ? 0

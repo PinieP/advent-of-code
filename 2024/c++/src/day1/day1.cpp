@@ -1,7 +1,7 @@
 import std;
 import utils;
 
-using namespace assert;
+using namespace utils::assert;
 
 
 auto parse(std::string_view input) -> std::pair<std::vector<int>, std::vector<int>>
