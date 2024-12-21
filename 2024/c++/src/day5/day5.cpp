@@ -9,25 +9,17 @@ using namespace std::string_view_literals;
 using utils::pretty::Color;
 using utils::pretty::colored;
 
-constexpr auto range_to_pair = [](ranges::range auto range) {
-    auto iter = ranges::begin(range);
-    auto first = iter;
-    auto second = ++iter;
-    assert_eq(++iter, ranges::end(range));
-    auto pair = std::pair{*first, *second};
-    return pair;
-};
 auto parse(std::string_view text) -> std::pair<std::set<std::pair<int, int>>, std::vector<std::vector<int>>>
 {
     constexpr auto parse_ints = views::transform(str::parse_num<int>) | views::transform(utils::opt_value);
-    const auto [constraint_text, updates_text] = range_to_pair(text | str::split("\n\n"));
+    const auto [constraint_text, updates_text] = utils::range_to_pair(text | str::split("\n\n"));
     const auto constraints = constraint_text //
                            | str::split('\n')
                            | views::transform(
                                  str::split('|') //
                                  | parse_ints
                            )
-                           | views::transform(range_to_pair) //
+                           | views::transform(utils::range_to_pair) //
                            | ranges::to<std::set>();
     const auto updates = updates_text //
                        | str::split_whitespace

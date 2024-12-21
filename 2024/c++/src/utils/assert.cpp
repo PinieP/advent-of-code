@@ -115,7 +115,7 @@ constexpr auto
 debug_assert(bool pred, std::string_view msg = "", std::source_location src_loc = std::source_location::current())
     -> void
 {
-    axon_assert(pred, msg, src_loc);
+    better_assert(pred, msg, src_loc);
 }
 #else
 constexpr auto

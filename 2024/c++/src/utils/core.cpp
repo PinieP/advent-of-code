@@ -1,11 +1,12 @@
 export module utils:core;
 import std;
+import :assert;
 
 export template <typename T>
 struct std::formatter<std::optional<T>> : std::formatter<std::string_view> {
     static constexpr auto format(std::optional<T>& opt, auto& ctx)
     {
-        if (opt) {
+        if (!opt) {
             return std::format_to(ctx.out(), "std::nullopt");
         }
         else {
@@ -15,6 +16,8 @@ struct std::formatter<std::optional<T>> : std::formatter<std::string_view> {
 };
 
 export namespace utils {
+using namespace assert;
+
 inline constexpr auto sum = []<typename R>
     requires std::invocable<std::plus<>, std::ranges::range_value_t<R>, std::ranges::range_value_t<R>>
 (R range) -> std::ranges::range_value_t<R> {
@@ -49,16 +52,34 @@ constexpr auto pipe(auto... fs)
 inline constexpr auto opt_value
     = []<typename T>(std::optional<T>&& optional) { return std::forward<decltype(optional)>(optional).value(); };
 
+
+inline constexpr struct Enumerate_closure : std::ranges::range_adaptor_closure<Enumerate_closure> {
+    static constexpr auto operator()(std::ranges::viewable_range auto&& range)
+    {
+        return std::views::zip(std::views::iota(0uz), std::forward<decltype(range)>(range));
+    }
+} enumerate;
+
 auto format_matrix(auto mat) -> std::string
 {
     return std::format("{:s}", std::views::iota(0uz, mat.extent(0)) | std::views::transform([=](std::size_t y) {
                                    return std::format(
-                                       "{:n}\n",
-                                       std::views::iota(0uz, mat.extent(1))
-                                           | std::views::transform([=](std::size_t x) { return mat[y, x]; })
+                                       "{:s}\n",
+                                       std::views::iota(0uz, mat.extent(1)) | std::views::transform([=](std::size_t x) {
+                                           return std::format("{} ", mat[y, x]);
+                                       }) | std::views::join
                                    );
                                }) | std::views::join);
 }
+
+inline constexpr auto range_to_pair = [](std::ranges::range auto range) {
+    auto iter = std::ranges::begin(range);
+    auto first = iter;
+    auto second = ++iter;
+    assert_eq(++iter, std::ranges::end(range));
+    auto pair = std::pair{*first, *second};
+    return pair;
+};
 
 
 } // namespace utils

@@ -173,7 +173,7 @@ export inline constexpr struct Split_adaptor {
     }
 } split;
 
-constexpr auto is_whitespace(char c) -> bool { return std::isspace(c); }
+inline constexpr auto is_whitespace = [](char c) -> bool { return std::isspace(c); };
 
 export inline constexpr struct Trim_adaptor : std::ranges::range_adaptor_closure<Trim_adaptor> {
     static constexpr auto operator()(std::string_view sv) -> std::string_view
@@ -218,10 +218,31 @@ export auto count_matches(Range_of<char> auto range, Pattern auto pattern) -> st
     return count;
 }
 
-constexpr auto match_whitespace(std::string_view sv) -> std::size_t
+export constexpr auto match_any_of(Pattern auto pat)
 {
-    return std::ranges::distance(sv | std::views::take_while(is_whitespace));
+    return [pat = bake_pattern(pat)](const Range_of<char> auto& chars) -> std::size_t {
+        auto baked = bake_pattern(pat);
+        auto iter = chars.begin();
+        auto end = chars.end();
+        std::size_t total_consumed = 0;
+        std::size_t consumed = 0;
+        while ((consumed = baked(std::ranges::subrange{iter, end}))) {
+            std::advance(iter, consumed);
+            total_consumed += consumed;
+        }
+        return total_consumed;
+    };
 }
+
+export constexpr auto match_or(Pattern auto... pats)
+{
+    return [=](const Range_of<char> auto& chars) -> std::size_t {
+        std::size_t consumed = 0;
+        ((consumed = bake_pattern(pats)(chars)) || ...);
+        return consumed;
+    };
+}
+inline constexpr auto match_whitespace = match_any_of(is_whitespace);
 
 
 struct Split_whitespace : std::ranges::range_adaptor_closure<Split_whitespace> {
@@ -238,9 +259,9 @@ export inline constexpr struct To_sv : std::ranges::range_adaptor_closure<To_sv>
     }
 } to_sv;
 
-export template <typename I>
-    requires std::integral<I>
-constexpr auto parse_num = [](const Sv_like auto& sv) -> std::optional<I> {
+export template <std::integral I>
+constexpr auto parse_num = [](const Sv_like auto& text) -> std::optional<I> {
+    std::string_view sv = text | to_sv;
     const char* first = std::ranges::begin(sv);
     const char* last = std::ranges::end(sv);
     I i;
@@ -252,6 +273,9 @@ constexpr auto parse_num = [](const Sv_like auto& sv) -> std::optional<I> {
         return std::optional{i};
     }
 };
+
+export template <std::integral I>
+inline constexpr auto parse_num_value = compose(opt_value, parse_num<I>);
 
 
 } // namespace utils::strings

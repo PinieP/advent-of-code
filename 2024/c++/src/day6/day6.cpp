@@ -24,7 +24,6 @@ struct Game_board {
     {
     }
 };
-
 struct Guard {
     Vec2 pos;
     Vec2 dir;
@@ -60,7 +59,6 @@ auto next_state(Game_marix matrix, Guard guard) -> std::optional<Guard>
     }
     return (matrix[y, x] == '#') ? Guard{guard.pos, guard.dir.rotated90()} : Guard{.pos{x, y}, .dir{guard.dir}};
 }
-
 auto get_states(Game_marix matrix, Guard guard) -> std::optional<std::set<Guard>>
 {
     std::optional<Guard> next = guard;
