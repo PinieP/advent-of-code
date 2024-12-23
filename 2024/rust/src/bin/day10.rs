@@ -56,7 +56,7 @@ fn walk_paths(matrix: MatrixView<u8>, position: Coordinate) -> Vec<Coordinate> {
 fn trailheads(matrix: MatrixView<u8>) -> impl Iterator<Item = Coordinate> + '_ {
     matrix
         .data
-        .chunks(matrix.extents.1)
+        .chunks(matrix.extents().1)
         .enumerate()
         .flat_map(|(y, row)| row.iter().enumerate().map(move |(x, e)| ((y, x), e)))
         .filter_map(|(coord, &e)| if e == 0 { Some(coord) } else { None })
