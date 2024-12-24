@@ -304,3 +304,21 @@ mod tests {
         );
     }
 }
+
+pub fn offset_by((y, x): (usize, usize), (dy, dx): (isize, isize)) -> Option<(usize, usize)> {
+    Some((
+        (y as isize + dy).try_into().ok()?,
+        (x as isize + dx).try_into().ok()?,
+    ))
+}
+
+pub fn neightbour_indices(
+    matrix: impl Matrix,
+    coord: (usize, usize),
+) -> impl Iterator<Item = (usize, usize)> {
+    [(-1, 0), (0, 1), (1, 0), (0, -1)]
+        .iter()
+        .filter_map(move |&offset| {
+            offset_by(coord, offset).filter(|&new_coord| matrix.in_bounds(new_coord))
+        })
+}

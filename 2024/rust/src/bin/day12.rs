@@ -1,4 +1,4 @@
-use rust::utils::{Matrix, MatrixBuf, MatrixView};
+use rust::utils::{self, Matrix, MatrixBuf, MatrixView};
 use std::fs;
 
 fn parse(input: &str) -> MatrixBuf<u8> {
@@ -11,22 +11,6 @@ fn parse(input: &str) -> MatrixBuf<u8> {
     )
 }
 
-type Coordinate = (usize, usize);
-fn offset_by((y, x): Coordinate, (dy, dx): (isize, isize)) -> Option<Coordinate> {
-    Some((
-        (y as isize + dy).try_into().ok()?,
-        (x as isize + dx).try_into().ok()?,
-    ))
-}
-
-fn valid_neighbors(matrix: impl Matrix, coord: Coordinate) -> impl Iterator<Item = Coordinate> {
-    [(-1, 0), (0, 1), (1, 0), (0, -1)]
-        .iter()
-        .filter_map(move |&offset| {
-            offset_by(coord, offset).filter(|&new_coord| matrix.in_bounds(new_coord))
-        })
-}
-
 fn matches(
     matrix: MatrixView<u8>,
     base: (usize, usize),
@@ -37,13 +21,14 @@ fn matches(
     slice
         .iter()
         .map(|&e| {
-            let reg = *offset_by(base, e)
+            let reg = *utils::offset_by(base, e)
                 .and_then(|ij| matrix.get(ij))
                 .unwrap_or(&254);
             reg == matrix[base] || reg == 255
         })
         .eq(pat.to_owned())
 }
+type Coordinate = (usize, usize);
 
 fn count_corners(matrix: MatrixView<u8>, coord: Coordinate) -> usize {
     let m = |slice, pat| matches(matrix, coord, slice, pat) as usize;
@@ -78,7 +63,7 @@ fn eat_region(matrix_buf: &mut MatrixBuf<u8>, start: Coordinate) -> (usize, usiz
         visited.push(top);
         let current_corners = count_corners(matrix.as_view(), top);
         matrix[top] = 255;
-        let same_region_neighbors: Vec<_> = valid_neighbors(matrix.as_view(), top)
+        let same_region_neighbors: Vec<_> = utils::neightbour_indices(matrix.as_view(), top)
             .filter(|&coord| {
                 let reg = matrix[coord];
                 reg == region || reg == 255

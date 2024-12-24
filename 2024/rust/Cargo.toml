@@ -3,12 +3,5 @@ name = "rust"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "day1"
-
-[[bin]]
-name = "day10"
-
-
 [dependencies]
 anyhow = "1.0.94"
