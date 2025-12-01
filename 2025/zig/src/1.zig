@@ -1,33 +1,19 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-pub fn readInput(gpa: Allocator) ![]const u8 {
-    const file = try std.fs.cwd().openFile("../inputs/1.txt", .{});
-    defer file.close();
-
-    var buf: [1024]u8 = undefined;
-    var reader = file.reader(&buf);
-
-    return try reader.interface.allocRemaining(gpa, .unlimited);
-}
-
 pub fn main() !void {
     var alloc_state: std.heap.DebugAllocator(.{}) = .init;
     defer std.debug.assert(alloc_state.deinit() == .ok);
     const gpa = alloc_state.allocator();
 
-    const input = try readInput(gpa);
-    std.debug.print("{any}", .{input[input.len - 100 ..]});
+    const input = try std.fs.cwd().readFileAlloc("../inputs/1.txt", gpa, .unlimited);
     defer gpa.free(input);
 
     const parsed = try parse(gpa, input);
     defer gpa.free(parsed);
 
-    const res1 = try task1(parsed);
-    std.debug.print("res1:\n{}\n", .{res1});
-
-    const res2 = try task2(parsed);
-    std.debug.print("res2:\n{}\n", .{res2});
+    std.debug.print("Task1:\n{}\n", .{try task1(parsed)});
+    std.debug.print("Task2:\n{}\n", .{try task2(parsed)});
 }
 
 test {
@@ -53,27 +39,18 @@ const example =
     \\L82
 ;
 
-fn parseNumber(remaining: []const u8) !struct { i32, usize } {
-    const newline_pos = std.mem.findScalar(u8, remaining, '\n') orelse remaining.len;
-    const num = try std.fmt.parseInt(i32, remaining[0..newline_pos], 10);
-    return .{ num, newline_pos + 1 };
-}
-
 fn parse(gpa: Allocator, input: []const u8) ![]i32 {
-    var idx: usize = 0;
     var numbers: std.ArrayList(i32) = .empty;
-    while (true) {
-        if (idx >= input.len) break;
-        const sign: i2 = switch (input[idx]) {
-            'L' => -1,
-            'R' => 1,
-            else => {
-                return error.InvalidInput;
-            },
+
+    var iter = std.mem.tokenizeScalar(u8, input, '\n');
+    while (iter.next()) |token| {
+        const num = try std.fmt.parseInt(i32, token[1..], 10);
+        const with_sign: i32 = switch (token[0]) {
+            'L' => -num,
+            'R' => num,
+            else => return error.InvalidInput,
         };
-        const num, const len = try parseNumber(input[idx + 1 ..]);
-        idx += 1 + len;
-        try numbers.append(gpa, sign * num);
+        try numbers.append(gpa, with_sign);
     }
     return numbers.toOwnedSlice(gpa);
 }

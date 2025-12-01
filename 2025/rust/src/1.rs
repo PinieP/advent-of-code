@@ -16,14 +16,14 @@ fn parse(input: &str) -> Vec<i32> {
     input[..input.len() - 1]
         .split('\n')
         .map(|it| {
-            let sign = match it.as_bytes()[0] {
-                b'L' => -1,
-                b'R' => 1,
+            let num: i32 = it[1..].parse().unwrap();
+            let with_sign = match it.as_bytes()[0] {
+                b'L' => -num,
+                b'R' => num,
                 _ => unreachable!(),
             };
 
-            let num: i32 = it[1..].parse().unwrap();
-            num * sign
+            num * with_sign
         })
         .collect()
 }
