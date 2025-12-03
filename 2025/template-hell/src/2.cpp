@@ -1,12 +1,13 @@
 #include "util.hpp"
 #include <print>
+#include <type_traits>
 
 
 template <typename lst>
 struct F {
     using split = split_first<V<'-'>, lst>;
-    static constexpr auto from = parse_int<fst<split>>;
-    static constexpr auto to = parse_int<snd<split>>;
+    static constexpr auto from = parse_int<fst<split>>::value;
+    static constexpr auto to = parse_int<snd<split>>::value;
     using ids = range<from, to>;
 
     template <typename id>
@@ -20,7 +21,7 @@ struct F {
     template <typename id>
     using m = M<id>::Value;
 
-    static constexpr auto value = sum<map<m, ids>>;
+    static constexpr auto value = sum<map<m, ids>>::value;
 };
 template <typename lst>
 using f = V<F<lst>::value>;
@@ -31,7 +32,8 @@ using example = string_to_list<"11-22,95-115,998-1012,1188511880-1188511890,2222
 
 using split = split_on<V<','>, example>;
 
-constexpr auto task1 = sum<map<f, split>>;
+
+constexpr auto task1 = sum<map<f, split>>::value;
 
 
 int main() { std::println("list: {}", task1); }

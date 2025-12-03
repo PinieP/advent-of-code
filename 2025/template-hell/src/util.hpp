@@ -132,28 +132,28 @@ struct TakeWhile<P, List<>> {
 
 
 template <template <typename> typename P, typename>
-struct SkipWhile {
+struct DropWhile {
     static_assert(false);
 };
 
 template <template <typename> typename P, typename List>
-using skip_while = typename SkipWhile<P, List>::Value;
+using drop_while = typename DropWhile<P, List>::Value;
 
 
 template <template <typename> typename P, typename x, typename... xs>
     requires IsTrue<P<x>>
-struct SkipWhile<P, List<x, xs...>> {
-    using Value = skip_while<P, List<xs...>>;
+struct DropWhile<P, List<x, xs...>> {
+    using Value = drop_while<P, List<xs...>>;
 };
 
 template <template <typename> typename P, typename x, typename... xs>
     requires IsFalse<P<x>>
-struct SkipWhile<P, List<x, xs...>> {
-    using Value = List<xs...>;
+struct DropWhile<P, List<x, xs...>> {
+    using Value = List<x, xs...>;
 };
 
 template <template <typename> typename P>
-struct SkipWhile<P, List<>> {
+struct DropWhile<P, List<>> {
     using Value = List<>;
 };
 
@@ -176,17 +176,17 @@ template <typename sentinel, typename xs>
 using take_until_eq = TakeUntilEq<sentinel, xs>::Value;
 
 template <typename sentinel, typename xs>
-struct SkipUntilEq {
+struct DropUntilEq {
     template <typename U>
     using E = Not<std::is_same<sentinel, U>>;
 
-    using Value = skip_while<E, xs>;
+    using Value = drop_while<E, xs>;
 };
 template <typename sentinel, typename xs>
-using skip_until_eq = SkipUntilEq<sentinel, xs>::Value;
+using drop_until_eq = DropUntilEq<sentinel, xs>::Value;
 
 template <typename delim, typename xs>
-using split_first = List<take_until_eq<delim, xs>, skip_until_eq<delim, xs>>;
+using split_first = List<take_until_eq<delim, xs>, tail<drop_until_eq<delim, xs>>>;
 
 template <typename, typename>
 struct SplitOn;
@@ -207,14 +207,14 @@ struct SplitOn<delim, List<>> {
 };
 
 
-template <int acc, char... xs>
+template <std::int64_t acc, char... xs>
 struct ParseIntAcc;
 
-template <int acc, char x, char... xs>
+template <std::int64_t acc, char x, char... xs>
 struct ParseIntAcc<acc, x, xs...> {
     static constexpr auto value = ParseIntAcc<acc * 10 + x - '0', xs...>::value;
 };
-template <int acc>
+template <std::int64_t acc>
 struct ParseIntAcc<acc> {
     static constexpr auto value = acc;
 };
@@ -243,9 +243,8 @@ struct ParseInt<List<V<xs>...>> {
     static constexpr auto value = ParseIntStart<xs...>::value;
 };
 
-
 template <typename lst>
-constexpr std::int64_t parse_int = ParseInt<lst>::value;
+using parse_int = V<ParseInt<lst>::value>;
 
 
 template <std::size_t N>
@@ -283,36 +282,33 @@ struct Map<f, List<>> {
 
 
 template <std::size_t n, typename>
-struct TakeN;
+struct Take;
 
 template <std::size_t n, typename xs>
-using take_n = TakeN<n, xs>::Value;
+using take = Take<n, xs>::Value;
 
-template <typename... xs>
-struct TakeN<0, List<xs...>> {
+template <std::size_t n, typename xs>
+    requires(n == 0 || std::same_as<xs, List<>>)
+struct Take<n, xs> {
     using Value = List<>;
 };
 
 template <std::size_t n, typename x, typename... xs>
     requires(n != 0)
-struct TakeN<n, List<x, xs...>> {
-    using Value = prepend<x, take_n<n - 1, List<xs...>>>;
-};
-template <std::size_t n>
-struct TakeN<n, List<>> {
-    using Value = List<>;
+struct Take<n, List<x, xs...>> {
+    using Value = prepend<x, take<n - 1, List<xs...>>>;
 };
 
 template <std::size_t n, typename>
 struct DropN;
 
 template <std::size_t n, typename xs>
-using drop_n = DropN<n, xs>::Value;
+using drop = DropN<n, xs>::Value;
 
 template <std::size_t n, typename x, typename... xs>
     requires(n != 0)
 struct DropN<n, List<x, xs...>> {
-    using Value = drop_n<n - 1, List<xs...>>;
+    using Value = drop<n - 1, List<xs...>>;
 };
 template <typename xs>
 struct DropN<0, xs> {
@@ -324,7 +320,7 @@ struct DropN<n, List<>> {
 };
 
 template <std::size_t n, typename xs>
-using split_at = List<take_n<n, xs>, drop_n<n, xs>>;
+using split_at = List<take<n, xs>, drop<n, xs>>;
 
 
 template <std::size_t from, std::size_t to>
@@ -370,9 +366,49 @@ struct Sum<List<V<x>, V<xs>...>> {
     static constexpr auto value = x + Sum<List<V<xs>...>>::value;
 };
 
-template <>
-struct Sum<List<>> {
-    static constexpr auto value = 0;
+
+template <typename>
+struct Head;
+template <typename x, typename... xs>
+struct Head<List<x, xs...>> {
+    using Value = x;
 };
-template <typename lst>
-static constexpr auto sum = Sum<lst>::value;
+template <typename xs>
+using head = Head<xs>::Value;
+
+
+template <template <typename, typename> typename f, typename z, typename xs>
+struct Fold {
+    using Value = Fold<f, f<z, head<xs>>, tail<xs>>::Value;
+};
+
+template <template <typename, typename> typename f, typename z>
+struct Fold<f, z, List<>> {
+    using Value = z;
+};
+
+template <template <typename, typename> typename f, typename z, typename xs>
+using fold = Fold<f, z, xs>::Value;
+
+template <template <typename, typename> typename f, typename xs>
+using fold1 = fold<f, head<xs>, tail<xs>>;
+
+template <typename T, typename U>
+using plus = V<T::value + U::value>;
+
+template <typename xs>
+using sum = fold<plus, V<0>, xs>;
+
+
+template <typename, typename>
+struct Max;
+template <auto l, auto r>
+struct Max<V<l>, V<r>> {
+    using Value = V<(l > r) ? l : r>;
+};
+template <typename l, typename r>
+using max = Max<l, r>::Value;
+
+
+template <typename xs>
+using maximum = fold1<max, xs>;

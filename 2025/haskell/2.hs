@@ -1,6 +1,5 @@
 module Main where
 
-import Data.Bifunctor (bimap)
 import Data.List (subsequences)
 import Data.List.NonEmpty (groupBy1)
 import Data.Maybe
@@ -26,7 +25,9 @@ splitFirst c xs = (before, drop 1 after)
 example = "11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124"
 
 parseToInts :: String -> [Integer]
-parseToInts = concatMap (uncurry enumFromTo . bimap read read . splitFirst '-') . splitOn ','
+parseToInts = concatMap (uncurry enumFromTo . both read . splitFirst '-') . splitOn ','
+  where
+    both f (x, y) = (f x, f y)
 
 parse = map show . parseToInts
 

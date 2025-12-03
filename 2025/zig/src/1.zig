@@ -24,6 +24,7 @@ test {
     try std.testing.expectEqual(3, task1(parsed));
 
     try std.testing.expectEqual(6, task2(parsed));
+    try std.testing.expectEqual(6, task2Cool(example));
 }
 
 const example =
@@ -69,7 +70,8 @@ fn task2(numbers: []const i32) !u32 {
     var zero_count: u32 = 0;
     var state: i32 = 50;
     for (numbers) |num| {
-        const one: i32, const abs: usize = if (num >= 0) .{ 1, @intCast(num) } else .{ -1, @intCast(-num) };
+        const one = std.math.sign(num);
+        const abs = @abs(num);
         for (0..abs) |_| {
             state = @mod(state + one, 100);
             if (state == 0) zero_count += 1;
