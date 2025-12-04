@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <print>
 
-
 using example = string_to_list<"987654321111111\n"
                                "811111111111119\n"
                                "234234234234278\n"
