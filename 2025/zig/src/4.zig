@@ -15,40 +15,30 @@ pub fn main() !void {
     std.debug.print("Task2:\n{}\n", .{task2(&mat)});
 }
 
+const Cell = enum(u8) {
+    empty = '.',
+    paper = '@',
+};
+
 const Matrix = struct {
-    buf: []u8,
+    buf: []Cell,
     row_count: usize,
     col_count: usize,
     stride: [2]usize,
 
-    fn calculateIndex(self: Matrix, i: usize, j: usize) ?usize {
-        return if (i >= self.row_count or j >= self.col_count)
-            null
-        else
-            i * self.stride[0] + j * self.stride[1];
+    fn calculateIndex(self: Matrix, row: usize, col: usize) usize {
+        assert(row < self.row_count or col < self.col_count);
+        return row * self.stride[0] + col * self.stride[1];
     }
-    fn atOrNull(self: Matrix, i: usize, j: usize) ?u8 {
-        const index = self.calculateIndex(i, j) orelse
-            return null;
+
+    fn at(self: Matrix, row: usize, col: usize) Cell {
+        const index = self.calculateIndex(row, col);
         return self.buf[index];
     }
-    fn at(self: Matrix, i: usize, j: usize) u8 {
-        return self.atOrNull(i, j).?;
-    }
 
-    fn ptrAt(self: *Matrix, i: usize, j: usize) *u8 {
-        const index = self.calculateIndex(i, j).?;
+    fn ptrAt(self: *Matrix, row: usize, col: usize) *Cell {
+        const index = self.calculateIndex(row, col);
         return &self.buf[index];
-    }
-
-    pub fn format(
-        self: @This(),
-        writer: *std.Io.Writer,
-    ) std.Io.Writer.Error!void {
-        for (0..self.row_count) |i| {
-            for (0..self.col_count) |j| try writer.writeByte(self.at(i, j));
-            try writer.writeByte('\n');
-        }
     }
 };
 
@@ -61,19 +51,23 @@ const Pos = struct {
 };
 
 fn countPaperNeighbors(mat: Matrix, pos: Pos) u64 {
-    //std.debug.print("({d}, {d})", .{ pos.row, pos.col });
     var count: u64 = 0;
-    inline for (0..3) |row_offs| {
-        if (std.math.sub(usize, pos.row + row_offs, 1) catch null) |row|
-            inline for (0..3) |col_offs|
-                if (std.math.sub(usize, pos.col + col_offs, 1) catch null) |col| {
-                    // std.debug.print("\t({d}, {d}) \n", .{ row, col });
-                    if (mat.atOrNull(row, col) == '@') {
-                        count += 1;
-                    }
-                };
+    const indices: [8]struct { comptime_int, comptime_int } = .{
+        .{ -1, -1 }, .{ -1, 0 }, .{ -1, 1 }, .{ 0, -1 }, .{ 0, 1 }, .{ 1, -1 }, .{ 1, 0 }, .{ 1, 1 },
+    };
+    inline for (indices) |pair| {
+        const i, const j = pair;
+        const row = @as(i64, @intCast(pos.row)) + i;
+        const col = @as(i64, @intCast(pos.col)) + j;
+
+        if (0 <= row and row < mat.row_count and
+            0 <= col and col < mat.col_count and
+            mat.at(@intCast(row), @intCast(col)) == .paper)
+        {
+            count += 1;
+        }
     }
-    return count - 1;
+    return count;
 }
 
 test {
@@ -102,16 +96,14 @@ test {
 const Mode = enum { remove, keep };
 fn processAccessible(mat: *Matrix, mode: Mode) u64 {
     var count: u64 = 0;
-    for (0..mat.row_count) |i| {
-        for (0..mat.col_count) |j|
-            if (mat.at(i, j) == '@') {
-                const neighbors = countPaperNeighbors(mat.*, .pos(i, j));
-                if (neighbors < 4) {
-                    if (mode == .remove) mat.ptrAt(i, j).* = 'x';
-                    count += 1;
-                }
-            };
-    }
+    for (0..mat.row_count) |i| for (0..mat.col_count) |j| {
+        if (mat.at(i, j) != .paper) continue;
+        const neighbors = countPaperNeighbors(mat.*, .pos(i, j));
+        if (neighbors < 4) {
+            if (mode == .remove) mat.ptrAt(i, j).* = .empty;
+            count += 1;
+        }
+    };
     return count;
 }
 
@@ -120,7 +112,7 @@ fn makeMat(buf: []u8) !Matrix {
     const row_count = buf.len / (col_count + 1);
 
     return .{
-        .buf = buf,
+        .buf = @ptrCast(buf),
         .row_count = row_count,
         .col_count = col_count,
         .stride = .{ col_count + 1, 1 },

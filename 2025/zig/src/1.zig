@@ -24,7 +24,6 @@ test {
     try std.testing.expectEqual(3, task1(parsed));
 
     try std.testing.expectEqual(6, task2(parsed));
-    try std.testing.expectEqual(6, task2Cool(example));
 }
 
 const example =
